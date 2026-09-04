@@ -17,7 +17,6 @@ namespace AbpTask.Modules.Room.Dtos.Request
         public required double BasePricePerHour { get; set; }
 
         [Required]
-
         [Length(1, int.MaxValue, ErrorMessage = "At least one service is required.")]
         public ICollection<Service> Services { get; set; } = [];
 

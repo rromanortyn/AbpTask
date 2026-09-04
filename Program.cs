@@ -1,15 +1,20 @@
 using AbpTask.Data;
 using AbpTask.Modules.Room.UseCases.Implementations;
 using AbpTask.Modules.Room.UseCases.Interfaces;
+using AbpTask.Shared;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContextPool<ApplicationDbContext>(options =>
+    options
+        .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+        .LogTo(Console.WriteLine, LogLevel.Information));
 
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddScoped<ICreateRoomUseCase, CreateRoomUseCase>();
+builder.Services.AddScoped<IUpdateRoomUseCase, UpdateRoomUseCase>();
 
 builder.Services.AddControllers();
 
