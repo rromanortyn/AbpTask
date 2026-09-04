@@ -2,6 +2,6 @@
 {
     public interface IUseCase<InputType, OutputType>
     {
-        public OutputType Execute(InputType input);
+        public Task<OutputType> Execute(InputType input);
     }
 }

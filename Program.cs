@@ -1,9 +1,15 @@
+using AbpTask.Data;
 using AbpTask.Modules.Room.UseCases.Implementations;
 using AbpTask.Modules.Room.UseCases.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton<ICreateRoomUseCase, CreateRoomUseCase>();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+builder.Services.AddScoped<ICreateRoomUseCase, CreateRoomUseCase>();
 
 builder.Services.AddControllers();
 
