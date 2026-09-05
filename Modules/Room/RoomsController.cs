@@ -19,17 +19,20 @@ namespace AbpTask.Modules.Room
         private readonly IMapper _mapper;
         private readonly ICreateRoomUseCase _createRoomUseCase;
         private readonly IUpdateRoomUseCase _updateRoomUseCase;
+        private readonly IDeleteRoomUseCase _deleteRoomUseCase;
         
 
         public RoomsController(
             IMapper mapper,
             ICreateRoomUseCase createRoomUseCase,
-            IUpdateRoomUseCase updateRoomUseCase
+            IUpdateRoomUseCase updateRoomUseCase,
+            IDeleteRoomUseCase deleteRoomUseCase
         )
         {
             _mapper = mapper;
             _createRoomUseCase = createRoomUseCase;
             _updateRoomUseCase = updateRoomUseCase;
+            _deleteRoomUseCase = deleteRoomUseCase;
         }
 
         [HttpPost]
@@ -179,6 +182,16 @@ namespace AbpTask.Modules.Room
             var responseDto = _mapper.Map<CreateRoomResponseDto>(useCaseOutput);
 
             return Ok(responseDto);
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteRoom([FromRoute] long id)
+        {
+            var useCaseInput = new DeleteRoomUseCaseInput { Id = id };
+
+            await _deleteRoomUseCase.Execute(useCaseInput);
+
+            return NoContent();
         }
     }
 }
