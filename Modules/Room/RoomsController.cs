@@ -1,13 +1,10 @@
-﻿using AbpTask.Data;
-using AbpTask.Data.Entities;
-using AbpTask.Modules.Room.Dtos.Request;
+﻿using AbpTask.Modules.Room.Dtos.Request;
 using AbpTask.Modules.Room.Dtos.Response;
 using AbpTask.Modules.Room.UseCases.Inputs;
 using AbpTask.Modules.Room.UseCases.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace AbpTask.Modules.Room
@@ -20,19 +17,22 @@ namespace AbpTask.Modules.Room
         private readonly ICreateRoomUseCase _createRoomUseCase;
         private readonly IUpdateRoomUseCase _updateRoomUseCase;
         private readonly IDeleteRoomUseCase _deleteRoomUseCase;
-        
+        private readonly ISearchRoomsUseCase _searchRoomsUseCase;
+
 
         public RoomsController(
             IMapper mapper,
             ICreateRoomUseCase createRoomUseCase,
             IUpdateRoomUseCase updateRoomUseCase,
-            IDeleteRoomUseCase deleteRoomUseCase
+            IDeleteRoomUseCase deleteRoomUseCase,
+            ISearchRoomsUseCase searchRoomsUseCase
         )
         {
             _mapper = mapper;
             _createRoomUseCase = createRoomUseCase;
             _updateRoomUseCase = updateRoomUseCase;
             _deleteRoomUseCase = deleteRoomUseCase;
+            _searchRoomsUseCase = searchRoomsUseCase;
         }
 
         [HttpPost]
@@ -167,10 +167,10 @@ namespace AbpTask.Modules.Room
                 }
             }
 
-            if (dtoToPatch != null && dtoToPatch.ServicesToAdd != null) 
+            if (dtoToPatch != null && dtoToPatch.ServicesToAdd != null)
             {
                 useCaseInput.ServicesToAdd = _mapper.Map<List<UpdateRoomUseCaseInput.Service>>(dtoToPatch.ServicesToAdd);
-                
+
             }
 
             if (dtoToPatch != null && dtoToPatch.ServicesToDelete != null)
@@ -192,6 +192,16 @@ namespace AbpTask.Modules.Room
             await _deleteRoomUseCase.Execute(useCaseInput);
 
             return NoContent();
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<List<CreateRoomResponseDto>>> SearchRooms([FromQuery] SearchRoomsRequestDto dto)
+        {
+            var input = _mapper.Map<SearchRoomsUseCaseInput>(dto);
+
+            var rooms = await _searchRoomsUseCase.Execute(input);
+
+            return Ok(rooms);
         }
     }
 }
