@@ -1,164 +1,158 @@
-# Implementation
+# Reservation API
 
-The application is implemented as a REST API using **ASP.NET Core** with **PostgreSQL** as the relational database.
+A REST API for managing rooms and reservations, implemented with **ASP.NET Core** and **PostgreSQL**.
 
-The main technologies used are:
+The application supports room management, reservation creation, dynamic reservation pricing, partial resource updates, and OpenAPI documentation through Scalar.
 
-- **ASP.NET Core** — API endpoints and application configuration
-- **Entity Framework Core** — database access, entity relationships and migrations
-- **PostgreSQL** — persistent data storage
-- **AutoMapper** — mapping between entities and request/response DTOs
-- **JsonPatch** — partial updates of existing resources through `PATCH` endpoints
+## Tech Stack
 
-The application separates API models from persistence entities and uses DTOs for communication with clients. Entity Framework Core is responsible for querying and persisting domain data, while AutoMapper reduces repetitive mapping code between the API and database layers.
+* **ASP.NET Core** — REST API and controller routing
+* **Entity Framework Core** — ORM and database access
+* **PostgreSQL** — relational database
+* **AutoMapper** — mapping between entities and DTOs
+* **JsonPatch** — partial updates through `PATCH` requests
+* **DataAnnotations** — request validation
+* **Scalar** — OpenAPI documentation UI
 
-## Reservation price calculation
+## API Routes
 
-Reservation pricing depends on the room's base hourly price and the pricing coefficient associated with different periods of the day.
+### Rooms
 
-Each configured hour range contains:
+#### Create room
 
-- start time;
-- end time;
-- pricing type;
-- price coefficient.
-
-### Calculating intersections
-
-A reservation can intersect several pricing ranges. For every range, the application calculates the duration of the intersection using:
-
-```csharp
-overlap =
-    Math.Max(
-        0,
-        Math.Min(reservationEnd, rangeEnd)
-        - Math.Max(reservationStart, rangeStart)
-    );
+```http
+POST /api/rooms
 ```
 
-Conceptually, the intersection:
+Creates a new room.
 
-1. starts at the later of the reservation start and range start;
-2. ends at the earlier of the reservation end and range end;
-3. is treated as zero when the resulting duration is negative.
+#### Get rooms
 
-In other words:
+```http
+GET /api/rooms
+```
+
+Returns the available rooms.
+
+#### Update room
+
+```http
+PATCH /api/rooms/{id}
+```
+
+Partially updates an existing room using **JSON Patch**.
+
+It's important to set the correct content type:
+
+```http
+Content-Type: application/json-patch+json
+```
+
+#### Delete room
+
+```http
+DELETE /api/rooms/{id}
+```
+
+Deletes a room by its identifier.
+
+### Reservations
+
+#### Create reservation
+
+```http
+POST /api/reservations
+```
+
+Creates a new reservation and calculates its price according to the room rate, reservation duration, selected services, and applicable time-based pricing coefficient.
+
+## Reservation Price Calculation
+
+Rooms have a base hourly price. Different periods of the day may have different price coefficients, such as morning, standard, rush-hour, or evening pricing.
+
+When creating a reservation, the application calculates how much the reservation overlaps each configured pricing range.
+
+The overlap is calculated as:
 
 ```text
-overlap start = latest start
-overlap end   = earliest end
+overlap start = latest start time
+overlap end   = earliest end time
+overlap       = max(0, overlap end - overlap start)
 ```
 
-Ranges that do not intersect the reservation are excluded from further calculations.
+In code, the calculation is equivalent to:
 
-### Range coverage
+```csharp
+Math.Max(
+    0,
+    Math.Min(reservationEnd.Ticks, rangeEnd.Ticks)
+    - Math.Max(reservationStart.Ticks, rangeStart.Ticks)
+)
+```
 
-For every intersecting range, the application calculates how much of that **pricing range** is covered by the reservation:
+Ranges with no intersection are ignored.
+
+For each intersecting range, the percentage of that pricing range covered by the reservation is also calculated:
 
 ```text
 coverage = overlap duration / pricing range duration
 ```
 
-For example, for a rush-hour range from `12:00` to `14:00`, a reservation covering the whole period has:
+The applicable range is selected primarily by the **highest price coefficient**. Coverage percentage is used as a secondary sorting criterion when coefficients are equal.
+
+This ensures that, for example, a reservation containing both standard and rush-hour periods can use the rush-hour coefficient even if the absolute standard-period overlap is longer.
+
+The selected coefficient is applied to the **room rental price**, while additional services are added separately.
+
+Conceptually:
 
 ```text
-2 hours overlap / 2 hours range duration = 100%
+room price =
+    base hourly price
+    × reservation duration
+    × pricing coefficient
+
+total reservation price =
+    room price
+    + additional services
 ```
 
-If a reservation covers three hours of a four-hour standard period:
+## Validation
+
+Request models use **DataAnnotations** for validation.
+
+Invalid requests are automatically returned as `400 Bad Request` responses by ASP.NET Core.
+
+## Partial Updates
+
+Room updates are implemented using **JsonPatch**.
+
+This allows clients to modify individual fields without sending the complete resource.
+
+Example:
+
+```json
+[
+  {
+    "op": "replace",
+    "path": "/name",
+    "value": "Conference Room"
+  }
+]
+```
+
+## Data Access
+
+**Entity Framework Core** is used to communicate with PostgreSQL.
+
+The application uses separate entity and DTO models. **AutoMapper** handles transformations between persistence models and API request/response models.
+
+## API Documentation
+
+Interactive OpenAPI documentation is available through **Scalar** at:
 
 ```text
-3 / 4 = 75%
+/scalar/v1
 ```
 
-Using the pricing range itself as the denominator makes it possible to compare how fully each configured range is covered by the reservation.
-
-### Selecting the applicable coefficient
-
-After calculating all intersections, only ranges with a positive overlap are considered.
-
-The selection process is:
-
-```text
-calculate intersections
-        ↓
-remove ranges with no intersection
-        ↓
-calculate percentage of each pricing range covered
-        ↓
-sort by price coefficient descending
-        ↓
-sort equal coefficients by coverage descending
-        ↓
-select the first range
-```
-
-The price coefficient is therefore the primary criterion.
-
-This is important for rush-hour pricing. Consider a reservation that contains:
-
-```text
-Standard period: 3 hours
-Rush period:     2 hours
-```
-
-Even though the reservation spends more absolute time in the standard period, the rush-hour range is selected because it has a higher pricing coefficient.
-
-This avoids relying only on the longest intersection, which could incorrectly select standard pricing for reservations that overlap a higher-demand period.
-
-A simplified LINQ representation of the algorithm is:
-
-```csharp
-var bestRange = hourRanges
-    .Select(range => new
-    {
-        Range = range,
-        Overlap = TimeSpan.FromTicks(
-            Math.Max(
-                0,
-                Math.Min(end.Ticks, range.End.Ticks)
-                - Math.Max(start.Ticks, range.Start.Ticks)
-            )
-        )
-    })
-    .Where(x => x.Overlap > TimeSpan.Zero)
-    .Select(x => new
-    {
-        x.Range,
-        x.Overlap,
-        Percentage =
-            x.Overlap.TotalMinutes /
-            (x.Range.End - x.Range.Start).TotalMinutes,
-        Coefficient = priceCoefficients[x.Range.Type]
-    })
-    .OrderByDescending(x => x.Coefficient)
-    .ThenByDescending(x => x.Percentage)
-    .FirstOrDefault();
-```
-
-The selected coefficient is then applied to the room's base hourly price when calculating the reservation price.
-
-Additional services are calculated separately and added to the adjusted room rental price.
-
-## Partial updates
-
-Resources that support partial modification use **JSON Patch** rather than requiring the client to send the complete object.
-
-ASP.NET Core's `JsonPatchDocument` is used to apply the requested operations to an update DTO. The resulting model is validated and then mapped back to the corresponding entity.
-
-This allows clients to update only individual fields while keeping the API's update behavior explicit and consistent.
-
-## Data persistence
-
-**Entity Framework Core** is used as the ORM and **PostgreSQL** as the database engine.
-
-EF Core provides:
-
-- entity mapping;
-- relationships between database models;
-- asynchronous queries;
-- change tracking;
-- persistence;
-- database migrations.
-
-Database entities remain separated from public API DTOs, with **AutoMapper** handling conversion between these representations.
+The documentation contains available routes, request and response schemas, validation responses, and supported HTTP status codes.
