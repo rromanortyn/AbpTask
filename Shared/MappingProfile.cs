@@ -15,14 +15,18 @@ namespace AbpTask.Shared
     {
         public MappingProfile()
         {
+            CreateMap<CreateRoomRequestDto, CreateRoomUseCaseInput>();
+            CreateMap<CreateRoomRequestDto.Service, CreateRoomUseCaseInput.Service>();
+            CreateMap<CreateRoomUseCaseOutput, RoomResponseDto>();
+            CreateMap<CreateRoomUseCaseOutput.Service, RoomResponseDto.Service>();
             CreateMap<RoomEntity, UpdateRoomRequestDto>();
             CreateMap<UpdateRoomRequestDto, UpdateRoomUseCaseInput>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             CreateMap<UpdateRoomRequestDto.Service, UpdateRoomUseCaseInput.Service>();
             CreateMap<RoomEntity, UpdateRoomUseCaseOutput>();
             CreateMap<ServiceEntity, UpdateRoomUseCaseOutput.Service>();
-            CreateMap<UpdateRoomUseCaseOutput, CreateRoomResponseDto>();
-            CreateMap<UpdateRoomUseCaseOutput.Service, CreateRoomResponseDto.Service>();
+            CreateMap<UpdateRoomUseCaseOutput, RoomResponseDto>();
+            CreateMap<UpdateRoomUseCaseOutput.Service, RoomResponseDto.Service>();
             CreateMap<SearchRoomsRequestDto, SearchRoomsUseCaseInput>()
                 .ForMember(dest => dest.StartAt, opt => opt.MapFrom(src => DateTime.Parse(src.StartAt)))
                 .ForMember(dest => dest.EndAt, opt => opt.MapFrom(src => DateTime.Parse(src.EndAt)));
@@ -32,6 +36,10 @@ namespace AbpTask.Shared
             CreateMap<CreateReservationUseCaseOutput, CreateReservationResponseDto>();
             CreateMap<CreateReservationUseCaseOutput.Service, CreateReservationResponseDto.Service>();
             CreateMap<CreateReservationUseCaseOutput.Room, CreateReservationResponseDto.Room>();
+            CreateMap<RoomEntity, SearchRoomsUseCaseOutput>();
+            CreateMap<ServiceEntity, SearchRoomsUseCaseOutput.Service>();
+            CreateMap<SearchRoomsUseCaseOutput, RoomResponseDto>();
+            CreateMap<SearchRoomsUseCaseOutput.Service, RoomResponseDto.Service>();
         }
     }
 }

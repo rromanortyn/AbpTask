@@ -36,46 +36,19 @@ namespace AbpTask.Modules.Room
         }
 
         [HttpPost]
-        public async Task<ActionResult<CreateRoomResponseDto>> CreateRoom([FromBody] CreateRoomRequestDto dto)
+        public async Task<ActionResult<RoomResponseDto>> CreateRoom([FromBody] CreateRoomRequestDto dto)
         {
-            var output = await _createRoomUseCase.Execute(
-                new CreateRoomUseCaseInput
-                {
-                    Name = dto.Name,
-                    Capacity = dto.Capacity,
-                    BasePricePerHour = dto.BasePricePerHour,
-                    Services = [.. dto.Services.Select((service) => new CreateRoomUseCaseInput.Service
-                    {
-                        Name = service.Name,
-                        Price = service.Price,
-                    })],
-                }
-            );
+            var useCaseInput = _mapper.Map<CreateRoomUseCaseInput>(dto);
 
-            return CreatedAtAction(
-                nameof(CreateRoom),
-                new CreateRoomResponseDto
-                {
-                    Id = output.Id,
-                    Name = output.Name,
-                    Capacity = output.Capacity,
-                    BasePricePerHour = output.BasePricePerHour,
-                    Services = [.. output.Services.Select((service) => new CreateRoomResponseDto.Service
-                    {
-                        Id = service.Id,
-                        Name = service.Name,
-                        Price = service.Price,
-                        CreatedAt = service.CreatedAt,
-                        UpdatedAt = service.UpdatedAt,
-                    })],
-                    CreatedAt = output.CreatedAt,
-                    UpdatedAt = output.UpdatedAt,
-                }
-            );
+            var useCaseOutput = await _createRoomUseCase.Execute(useCaseInput);
+
+            var responseDto = _mapper.Map<RoomResponseDto>(useCaseOutput);
+
+            return CreatedAtAction(nameof(CreateRoom), responseDto);
         }
 
         [HttpPatch("{id}")]
-        public async Task<ActionResult<CreateRoomResponseDto>> UpdateRoom(
+        public async Task<ActionResult<RoomResponseDto>> UpdateRoom(
             [FromRoute] long id,
             [FromBody] JsonPatchDocument<UpdateRoomRequestDto> patchDoc
         )
@@ -179,7 +152,7 @@ namespace AbpTask.Modules.Room
             }
 
             var useCaseOutput = await _updateRoomUseCase.Execute(useCaseInput);
-            var responseDto = _mapper.Map<CreateRoomResponseDto>(useCaseOutput);
+            var responseDto = _mapper.Map<RoomResponseDto>(useCaseOutput);
 
             return Ok(responseDto);
         }
@@ -195,13 +168,15 @@ namespace AbpTask.Modules.Room
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<CreateRoomResponseDto>>> SearchRooms([FromQuery] SearchRoomsRequestDto dto)
+        public async Task<ActionResult<List<RoomResponseDto>>> SearchRooms([FromQuery] SearchRoomsRequestDto dto)
         {
-            var input = _mapper.Map<SearchRoomsUseCaseInput>(dto);
+            var useCaseInput = _mapper.Map<SearchRoomsUseCaseInput>(dto);
 
-            var rooms = await _searchRoomsUseCase.Execute(input);
+            var useCaseOutput = await _searchRoomsUseCase.Execute(useCaseInput);
 
-            return Ok(rooms);
+            var responseDto = _mapper.Map<List<RoomResponseDto>>(useCaseOutput);
+
+            return Ok(responseDto);
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace AbpTask.Modules.Room.Dtos.Response
 {
-    public class CreateRoomResponseDto
+    public class RoomResponseDto
     {
         public required long Id { get; set; }
         public required string Name { get; set; }
