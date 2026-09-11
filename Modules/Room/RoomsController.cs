@@ -2,6 +2,7 @@
 using AbpTask.Modules.Room.Dtos.Response;
 using AbpTask.Modules.Room.UseCases.Inputs;
 using AbpTask.Modules.Room.UseCases.Interfaces;
+using AbpTask.Shared;
 using AutoMapper;
 using Microsoft.AspNetCore.JsonPatch.SystemTextJson;
 using Microsoft.AspNetCore.Mvc;
@@ -36,6 +37,8 @@ namespace AbpTask.Modules.Room
         }
 
         [HttpPost]
+        [ProducesResponseType<RoomResponseDto>(StatusCodes.Status201Created)]
+        [ProducesResponseType<ValidationErrorResponseDto>(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<RoomResponseDto>> CreateRoom([FromBody] CreateRoomRequestDto dto)
         {
             var useCaseInput = _mapper.Map<CreateRoomUseCaseInput>(dto);
@@ -48,6 +51,9 @@ namespace AbpTask.Modules.Room
         }
 
         [HttpPatch("{id}")]
+        [ProducesResponseType<RoomResponseDto>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ValidationErrorResponseDto>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<RoomResponseDto>> UpdateRoom(
             [FromRoute] long id,
             [FromBody] JsonPatchDocument<UpdateRoomRequestDto> patchDoc
@@ -158,6 +164,9 @@ namespace AbpTask.Modules.Room
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType<ValidationErrorResponseDto>(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> DeleteRoom([FromRoute] long id)
         {
             var useCaseInput = new DeleteRoomUseCaseInput { Id = id };
@@ -168,6 +177,8 @@ namespace AbpTask.Modules.Room
         }
 
         [HttpGet]
+        [ProducesResponseType<List<RoomResponseDto>>(StatusCodes.Status200OK)]
+        [ProducesResponseType<ValidationErrorResponseDto>(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<List<RoomResponseDto>>> SearchRooms([FromQuery] SearchRoomsRequestDto dto)
         {
             var useCaseInput = _mapper.Map<SearchRoomsUseCaseInput>(dto);

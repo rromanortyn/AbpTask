@@ -1,6 +1,7 @@
 ﻿using AbpTask.Data;
 using AbpTask.Modules.Room.UseCases.Inputs;
 using AbpTask.Modules.Room.UseCases.Interfaces;
+using AbpTask.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace AbpTask.Modules.Room.UseCases.Implementations
@@ -21,7 +22,15 @@ namespace AbpTask.Modules.Room.UseCases.Implementations
 
             if (roomById == null)
             {
-                throw new Exception("Room not found");
+                throw new AppException(
+                    new AppException.Info
+                    {
+                        Type = AppException.Info.TypeEnum.NotFound,
+                        Code = "RoomNotFound",
+                        Message = "A room with the specified id does not exist",
+                    },
+                    null
+                );
             }
 
             _context.Rooms.Remove(roomById);

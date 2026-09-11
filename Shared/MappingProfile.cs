@@ -17,6 +17,8 @@ namespace AbpTask.Shared
         {
             CreateMap<CreateRoomRequestDto, CreateRoomUseCaseInput>();
             CreateMap<CreateRoomRequestDto.Service, CreateRoomUseCaseInput.Service>();
+            CreateMap<RoomEntity, CreateRoomUseCaseOutput>();
+            CreateMap<ServiceEntity, CreateRoomUseCaseOutput.Service>();
             CreateMap<CreateRoomUseCaseOutput, RoomResponseDto>();
             CreateMap<CreateRoomUseCaseOutput.Service, RoomResponseDto.Service>();
             CreateMap<RoomEntity, UpdateRoomRequestDto>();

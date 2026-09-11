@@ -3,6 +3,7 @@ using AbpTask.Data.Entities;
 using AbpTask.Modules.Room.UseCases.Inputs;
 using AbpTask.Modules.Room.UseCases.Interfaces;
 using AbpTask.Modules.Room.UseCases.Outputs;
+using AbpTask.Shared;
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,7 +28,15 @@ namespace AbpTask.Modules.Room.UseCases.Implementations
 
             if (roomEntity == null)
             {
-                throw new Exception($"Room with ID {input.Id} not found.");
+                throw new AppException(
+                    new AppException.Info
+                    {
+                        Type = AppException.Info.TypeEnum.NotFound,
+                        Code = "RoomNotFound",
+                        Message = $"Room with ID {input.Id} not found."
+                    },
+                    null
+                );
             }
 
             if (input.HasName && input.Name != null)
@@ -58,7 +67,15 @@ namespace AbpTask.Modules.Room.UseCases.Implementations
 
             if (notFoundServicesIdsToDelete.Any())
             {
-                throw new Exception($"Service {notFoundServicesIdsToDelete.First()} not found");
+                throw new AppException(
+                    new AppException.Info
+                    {
+                        Type = AppException.Info.TypeEnum.NotFound,
+                        Code = "ServiceNotFound",
+                        Message = $"Service {notFoundServicesIdsToDelete.First()} not found."
+                    },
+                    null
+                );
             }
 
             var servicesToRemove = roomEntity.Services

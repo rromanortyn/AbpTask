@@ -3,16 +3,19 @@ using AbpTask.Modules.Room.UseCases.Inputs;
 using AbpTask.Modules.Room.UseCases.Interfaces;
 using AbpTask.Modules.Room.UseCases.Outputs;
 using AbpTask.Data.Entities;
+using AutoMapper;
 
 namespace AbpTask.Modules.Room.UseCases.Implementations
 {
     public class CreateRoomUseCase : ICreateRoomUseCase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
 
-        public CreateRoomUseCase(ApplicationDbContext context)
+        public CreateRoomUseCase(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         public async Task<CreateRoomUseCaseOutput> Execute(CreateRoomUseCaseInput input)
@@ -39,26 +42,7 @@ namespace AbpTask.Modules.Room.UseCases.Implementations
             await _context.Rooms.AddAsync(roomEntity);
             await _context.SaveChangesAsync();
 
-            return new CreateRoomUseCaseOutput
-            {
-                Id = roomEntity.Id,
-                Name = roomEntity.Name,
-                Capacity = roomEntity.Capacity,
-                BasePricePerHour = roomEntity.BasePricePerHour,
-                Services = [.. roomEntity.Services.Select((service) =>
-                {
-                    return new CreateRoomUseCaseOutput.Service
-                    {
-                        Id = service.Id,
-                        Name = service.Name,
-                        Price = service.Price,
-                        CreatedAt = service.CreatedAt,
-                        UpdatedAt = service.UpdatedAt,
-                    };
-                })],
-                CreatedAt = roomEntity.CreatedAt,
-                UpdatedAt = roomEntity.UpdatedAt,
-            };
+            return _mapper.Map<CreateRoomUseCaseOutput>(roomEntity);
         }
     }
 }
